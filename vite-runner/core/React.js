@@ -21,9 +21,9 @@ function createElement(type, props, ...children) {
 // const App = createElement("div", { id: "app" }, "hello", "-", "react");
 
 // 设置当前任务
-let nextUnitOfWork = null;
+let fiber = null;
 function render(element, container) {
-  // 第一次 nextUnitOfWork值:
+  // 第一次 fiber值:
   // { dom: div#root,
   //   props: {
   //   children: [
@@ -58,13 +58,12 @@ function render(element, container) {
   //     },
   //   ],
   // }}
-  nextUnitOfWork = {
+  fiber = {
     dom: container,
     props: {
       children: [element],
     },
   };
-  console.log(111, nextUnitOfWork);
 }
 
 let shouldYield = false;
@@ -83,7 +82,7 @@ function updateProps(dom, props) {
 function initChildren() {
   // 第一次进来的时候，#root的子元素是 div
   // 第二次进来的时候，是 div下面的 children,即两个 span
-  const children = nextUnitOfWork.props.children;
+  const children = fiber.props.children;
   let prevChild = null;
   // 遍历 #root 的 props.children 数组
   // 遍历 div 的 props.children 数组
@@ -93,16 +92,16 @@ function initChildren() {
       type: child.type,
       props: child.props,
       child: null,
-      parent: nextUnitOfWork,
+      parent: fiber,
       brother: null,
       dom: null,
     };
     if (index === 0) {
-      // 当第一个数据进来的时候, 这个赋值给 nextUnitOfWork.child
+      // 当第一个数据进来的时候, 这个赋值给 fiber.child
       // 当第一个 span 进来的时候，将这个数据赋值给 prevChild
-      nextUnitOfWork.child = newChild;
+      fiber.child = newChild;
     } else {
-      // 当第二个 span 进来的时候，因为 javascript 对象引用的是地址，而非真实对象，所以当把 preChild[brother]赋值的时候，同样也是给 nextUnitOfWork.child[brother]赋值，所以 nextUnitOfWork 的 child 里会有 brother 属性
+      // 当第二个 span 进来的时候，因为 javascript 对象引用的是地址，而非真实对象，所以当把 preChild[brother]赋值的时候，同样也是给 fiber.child[brother]赋值，所以 fiber 的 child 里会有 brother 属性
       prevChild.brother = newChild;
     }
     // 然后再将这个数据保持下来
@@ -112,28 +111,28 @@ function initChildren() {
   });
 }
 
-function performUnitOfWork(nextUnitOfWork) {
-  if (!nextUnitOfWork.dom) {
-    const dom = (nextUnitOfWork.dom = createDom(nextUnitOfWork.type));
-    nextUnitOfWork.parent.dom.appendChild(dom);
+function performUnitOfWork(fiber) {
+  if (!fiber.dom) {
+    const dom = (fiber.dom = createDom(fiber.type));
+    fiber.parent.dom.appendChild(dom);
 
-    updateProps(dom, nextUnitOfWork.props);
+    updateProps(dom, fiber.props);
   }
 
   initChildren();
 
-  if (nextUnitOfWork.child) {
-    return nextUnitOfWork.child;
+  if (fiber.child) {
+    return fiber.child;
   }
-  if (nextUnitOfWork.brother) {
-    return nextUnitOfWork.brother;
+  if (fiber.brother) {
+    return fiber.brother;
   }
-  return nextUnitOfWork.parent?.brother;
+  return fiber.parent?.brother;
 }
 function workLoop(deadline) {
-  while (!shouldYield && nextUnitOfWork) {
+  while (!shouldYield && fiber) {
     // performUnitOfWork 会返回下一个任务的 obj
-    nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
+    fiber = performUnitOfWork(fiber);
     // 剩余时间小于 5ms 的话就退出
     shouldYield = deadline.timeRemaining() < 5;
   }
