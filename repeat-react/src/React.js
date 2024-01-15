@@ -1,6 +1,8 @@
+const TEXT_ELEMENT = "TEXT_ELEMENT";
+
 function createChild(text) {
   return {
-    type: "TEXT_ELEMENT",
+    type: TEXT_ELEMENT,
     props: {
       nodeValue: text,
       children: [],
@@ -18,9 +20,10 @@ function createElement(type, props, ...children) {
     },
   };
 }
+// TODO: 需要处理递归的问题 --> 转换成 边渲染边转换成链表
 
 function render(element, container) {
-  const dom = element.type === "TEXT_ELEMENT" ? document.createTextNode("") : document.createElement(element.type);
+  const dom = element.type === TEXT_ELEMENT ? document.createTextNode("") : document.createElement(element.type);
 
   Object.keys(element.props).forEach((prop) => {
     if (prop !== "children") {
