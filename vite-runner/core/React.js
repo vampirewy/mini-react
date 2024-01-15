@@ -12,7 +12,10 @@ function createElement(type, props, ...children) {
     type,
     props: {
       ...props,
-      children: children.map((child) => (typeof child === "string" ? createChildEle(child) : child)),
+      children: children.map((child) => {
+        const isTextNode = typeof child === "string" || typeof child === "number";
+        return isTextNode ? createChildEle(child) : child;
+      }),
     },
   };
 }
@@ -73,12 +76,20 @@ function render(element, container) {
 function commitRoot() {
   // 第一次进入是 div 元素对应的数据
   commitWork(root.child);
+  root = null;
 }
 function commitWork(fiber) {
   if (!fiber) return;
   // 递归添加子元素 及 兄弟元素
   // 第一次将 div 添加至他的父级元素
-  fiber.parent.dom.appendChild(fiber.dom);
+  let fiberParent = fiber.parent;
+  while (!fiberParent.dom) {
+    fiberParent = fiberParent.parent;
+  }
+
+  if (fiber.dom) {
+    fiberParent.dom.appendChild(fiber.dom);
+  }
 
   commitWork(fiber.child);
   commitWork(fiber.sibling);
@@ -97,10 +108,11 @@ function updateProps(dom, props) {
   });
 }
 
-function initChildren(fiber) {
+function initChildren(fiber, children) {
+  // console.log("fiber---->", fiber);
   // 第一次进来的时候，#root的子元素是 div
   // 第二次进来的时候，是 div下面的 children,即两个 span
-  const children = fiber.props.children;
+  // const children = fiber.props.children;
   let prevChild = null;
   // 遍历 #root 的 props.children 数组
   // 遍历 div 的 props.children 数组
@@ -129,23 +141,40 @@ function initChildren(fiber) {
   });
 }
 
-function performUnitOfWork(fiber) {
+function updateFunctionComponent(fiber) {
+  const children = [fiber.type(fiber.props)];
+
+  initChildren(fiber, children);
+}
+function updateHostComponent(fiber) {
   if (!fiber.dom) {
     const dom = (fiber.dom = createDom(fiber.type));
-    // fiber.parent.dom.appendChild(dom);
 
     updateProps(dom, fiber.props);
   }
+  const children = fiber.props.children;
 
-  initChildren(fiber);
+  initChildren(fiber, children);
+}
+
+function performUnitOfWork(fiber) {
+  const isFunctionComponent = typeof fiber.type === "function";
+
+  if (!isFunctionComponent) {
+    updateHostComponent(fiber);
+  } else {
+    updateFunctionComponent(fiber);
+  }
 
   if (fiber.child) {
     return fiber.child;
   }
-  if (fiber.sibling) {
-    return fiber.sibling;
+
+  let newFiber = fiber;
+  while (newFiber) {
+    if (newFiber.sibling) return newFiber.sibling;
+    newFiber = newFiber.parent;
   }
-  return fiber.parent?.sibling;
 }
 function workLoop(deadline) {
   while (!shouldYield && nextUnitOfWork) {
@@ -158,7 +187,6 @@ function workLoop(deadline) {
   if (!nextUnitOfWork && root) {
     // 这边执行，一次性将 dom 渲染至页面
     commitRoot();
-    root = null;
   }
 
   requestIdleCallback(workLoop);
