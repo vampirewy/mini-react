@@ -2,8 +2,17 @@ import React from "./src/React";
 
 // const App = React.createElement("div", { id: "app" }, "hi", "mini", "react");
 
-const App = <div id="app">hi-mini-react</div>;
-
+const App = (
+  <div id="app">
+    {/* <div className="2342">
+      <text>hi</text>
+      <text>mini</text>
+    </div> */}
+    <text>hi</text>
+    <text>mini</text>
+  </div>
+);
+// console.log("App--->", App);
 // function AppOne() {
 //   return <div id="app">hi-mini-react</div>;
 // }
