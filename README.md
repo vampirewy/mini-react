@@ -76,9 +76,7 @@ function createElement(type, props, ...children) {
     },
   };
 }
-// React 创建的本质就是这个
-const App = createElement("div", { id: "app" }, "hi", "mini", "react");
-// 使用递归去创建 vdom
+// 使用递归去创建 vdom， 如果节点量很大的话，会造成浏览器卡死的情况，而且递归还有可能造成内存溢出
 function render(element, container) {
   const dom = element.type === "TEXT_ELEMENT" ? document.createTextNode("") : document.createElement(element.type);
 
@@ -95,7 +93,164 @@ function render(element, container) {
   container.appendChild(dom);
 }
 
+// React 创建的本质就是这个
+const App = createElement("div", { id: "app" }, "hi", "mini", "react");
 render(App, document.querySelector("#root"));
 ```
 
-4. 变更形状，与 React 保持一致(详见 repeat-react)
+4. 变更形状，与 React 保持一致
+
+```javascript
+/**
+ * 添加 React.js、ReactDom.js、App.jsx 文件
+ */
+
+// ReactDom.js 中
+import React from "./React.js";
+
+const ReactDOM = {
+  createRoot(container) {
+    return {
+      render(App) {
+        React.render(App, container);
+      },
+    };
+  },
+};
+
+export default ReactDOM;
+
+// React.js 中
+// 直接将第3步的内容放入，去除 App 相关内容，同时导出 React 变量中的方法
+const React = {
+  createElement,
+  render,
+};
+
+export default React;
+
+// APP.js 中
+import React from "./src/React";
+
+// const App = React.createElement("div", { id: "app" }, "hi", "mini", "react");
+// 这边可以这样用是因为安装了 Vite，支持 jsx
+const App = <div id="app">hi-mini-react</div>;
+
+// function AppOne() {
+//   return <div id="app">hi-mini-react</div>;
+// }
+
+// console.log(AppOne);
+// AppOne() {
+// 这边实际调用的是自己写的 React.createElement 方法
+// return /* @__PURE__ */ React.createElement("div", { id: "app" }, "hi-mini-react");
+// }
+export default App;
+```
+
+5. 因为 render 方法是采用递归的方式一次性将 dom 渲染至页面。如果 dom 元素量很大，可以会造成页面卡顿或者内存溢出的问题，为了解决这个问题，我们采用 requestIdleCallback 方法去处理大量的 dom，并将原树状结构的 vdom 更改为链表结构，边渲染边处理下一个节点
+
+```javascript
+// 下一个单元任务
+// 每次只处理一个 vdom
+let nextOfUnitWork = null;
+// 改造 render 方法，不直接在这里渲染 dom
+function render(element, container) {
+  nextOfUnitWork = {
+    dom: container,
+    props: {
+      children: [element],
+    },
+  };
+  // nextOfUnitWork = {
+  //   dom: "div#root",
+  //   props: {
+  //     children: [
+  //       {
+  //         type: "div",
+  //         props: {
+  //           id: "app",
+  //           children: [
+  //             {
+  //               type: "TEXT_ELEMENT",
+  //               props: {
+  //                 nodeValue: text,
+  //                 children: [],
+  //               },
+  //             },
+  //           ],
+  //         },
+  //       },
+  //     ],
+  //   },
+  // };
+}
+
+function performUnitOfWork(fiber) {
+  // fiber 即传入的 nextUnitOfWork
+  // 第一次传入的时候为 { dom: 'div#root', props: { children: [ ] } }
+  // 第二次传入的时候为 { dom: undefined, type: 'div', props: { id:'app', children: [ ] } }
+  // 第二次传入的时候为 { dom: undefined, props: { children: [ ] }, type: 'text'}
+  // vdom 进来是不存在 dom 的
+  if (!fiber.dom) {
+    const dom = (fiber.dom =
+      fiber.type === TEXT_ELEMENT ? document.createTextNode("") : document.createElement(fiber.type));
+
+    fiber.parent.dom.appendChild(dom);
+
+    Object.keys(fiber.props).forEach((prop) => {
+      if (prop !== "children") {
+        dom[prop] = fiber.props[prop];
+      }
+    });
+  }
+  const children = fiber.props.children;
+  let prevChild = null;
+  // 第一次遍历 div 属性为 id = app 的
+  // 第二次遍历 两个 text 结构
+  children.forEach((child, index) => {
+    // 为了不破坏原有数据结构，重开一个对象进行赋值
+    const newFiber = {
+      type: child.type,
+      props: child.props,
+      child: null,
+      parent: nextOfUnitWork,
+      dom: null,
+      sibling: null,
+    };
+
+    if (index === 0) {
+      // 第一次给 div#root 绑定属性为 id = app 的 div 的数据结构
+      nextOfUnitWork.child = newFiber;
+    } else {
+      // 当遍历到第二个 text 结构时，因为 prevChild 保存的是 index = 0 的那个 text 结构，所以把第二个 text 赋值给第一个 text
+      // 即第二个 text 是第一个 text 的兄弟，你的右手边的兄弟，存储你右手边的兄弟
+      prevChild.sibling = newFiber;
+    }
+    // 第一次进来的时候，保存 index = 0 的 item
+    prevChild = newFiber;
+  });
+
+  // 这边的返回值是供 workLoop 继续使用
+  // 第一次的时候 div#root,只有属性为 id = app 的 div，所以直接返回
+  if (nextOfUnitWork.child) return nextOfUnitWork.child;
+
+  if (nextOfUnitWork.sibling) return nextOfUnitWork.sibling;
+  // 当我连兄弟都没有的时候，我需要去找我的爸爸的兄弟
+  return nextOfUnitWork.parent?.sibling;
+}
+
+function workLoop(deadline) {
+  let shouldYield = false;
+  while (!shouldYield && nextOfUnitWork) {
+    // 递归调用 performUnitOfWork 方法
+    nextOfUnitWork = performUnitOfWork(nextOfUnitWork);
+    // 如果空余时间 < 10 ，将这个变量更改为 true ，跳出循环，不再进行轮询监听
+    shouldYield = deadline.timeRemaining() < 10;
+  }
+  requestIdleCallback(workLoop);
+}
+// 该方法可以在浏览器空闲时间进行任务安排，workLoop 是回调，里面有一个 timeRemaining()方法，用于知道还有多少时间空闲
+// 后台任务调度器
+requestIdleCallback(workLoop);
+```
