@@ -25,58 +25,26 @@ function createElement(type, props, ...children) {
 
 // 设置当前任务
 let nextUnitOfWork = null;
-// 保存根节点信息
-let root = null;
+// 保存根节点信息 work in process
+let wipRoot = null;
+// 创建一份新的 vdom
+let currentRoot = null;
 function render(element, container) {
-  // 第一次 nextUnitOfWork值:
-  // { dom: div#root,
-  //   props: {
-  //   children: [
-  //     {
-  //       props: {
-  //         children: [
-  //           {
-  //             props: {
-  //               children: [],
-  //               nodeValue: "hello",
-  //             },
-  //             type: "TEXT_ELEMENT",
-  //           },
-  //           {
-  //             props: {
-  //               children: [],
-  //               nodeValue: "react",
-  //             },
-  //             type: "TEXT_ELEMENT",
-  //           },
-  //           {
-  //             props: {
-  //               children: [],
-  //               nodeValue: "mini",
-  //             },
-  //             type: "TEXT_ELEMENT",
-  //           },
-  //         ],
-  //         id: "app",
-  //       },
-  //       type: "div",
-  //     },
-  //   ],
-  // }}
-  nextUnitOfWork = {
+  wipRoot = {
     dom: container,
     props: {
       children: [element],
     },
   };
   // 记录 #root 元素
-  root = nextUnitOfWork;
+  nextUnitOfWork = wipRoot;
 }
 
 function commitRoot() {
   // 第一次进入是 div 元素对应的数据
-  commitWork(root.child);
-  root = null;
+  commitWork(wipRoot.child);
+  currentRoot = wipRoot;
+  wipRoot = null;
 }
 function commitWork(fiber) {
   if (!fiber) return;
@@ -87,49 +55,91 @@ function commitWork(fiber) {
     fiberParent = fiberParent.parent;
   }
 
-  if (fiber.dom) {
-    fiberParent.dom.appendChild(fiber.dom);
+  if (fiber.effectTag === "update") {
+    updateProps(fiber.dom, fiber.props, fiber.alternate?.props);
+  } else if (fiber.effectTag === "placement") {
+    if (fiber.dom) {
+      fiberParent.dom.appendChild(fiber.dom);
+    }
   }
 
   commitWork(fiber.child);
   commitWork(fiber.sibling);
 }
 
-let shouldYield = false;
 function createDom(type) {
   return type !== "TEXT_ELEMENT" ? document.createElement(type) : document.createTextNode("");
 }
 
-function updateProps(dom, props) {
-  Object.keys(props).forEach((prop) => {
+function updateProps(dom, nextProps, prevProps) {
+  // 1. old 有 new 没有，删除
+  Object.keys(prevProps).forEach((prop) => {
     if (prop !== "children") {
-      if (prop.startsWith("on")) {
-        const eventType = prop.slice(2).toLowerCase();
-        dom.addEventListener(eventType, props[prop]);
+      if (!(prop in nextProps)) {
+        dom.removeAttribute(prop);
       }
-      dom[prop] = props[prop];
+    }
+  });
+  // 2. new 有 old 没有
+  // 3. new 有 old 有
+  Object.keys(nextProps).forEach((prop) => {
+    if (prop !== "children") {
+      if (nextProps[prop] !== prevProps[prop]) {
+        if (prop.startsWith("on")) {
+          const eventType = prop.slice(2).toLowerCase();
+          dom.removeEventListener(eventType, prevProps[prop]);
+          dom.addEventListener(eventType, nextProps[prop]);
+        } else {
+          dom[prop] = nextProps[prop];
+        }
+      }
     }
   });
 }
 
-function initChildren(fiber, children) {
+function reconcileChildren(fiber, children) {
   // console.log("fiber---->", fiber);
   // 第一次进来的时候，#root的子元素是 div
   // 第二次进来的时候，是 div下面的 children,即两个 span
   // const children = fiber.props.children;
   let prevChild = null;
+  // 第一次进来的时候是 div#app
+  let oldFiber = fiber.alternate?.child;
+
   // 遍历 #root 的 props.children 数组
   // 遍历 div 的 props.children 数组
   children.forEach((child, index) => {
-    // 这里新建一个对象是为了获取每一个元素的父级元素，同时不破坏原先设置的 vdom 的数据结构
-    const newFiber = {
-      type: child.type,
-      props: child.props,
-      child: null,
-      parent: fiber,
-      sibling: null,
-      dom: null,
-    };
+    let newFiber;
+    const isSameType = oldFiber && oldFiber.type === child.type;
+    if (isSameType) {
+      // 目前只考虑更新 props
+      newFiber = {
+        type: child.type,
+        props: child.props,
+        child: null,
+        parent: fiber,
+        sibling: null,
+        dom: oldFiber.dom,
+        alternate: oldFiber,
+        effectTag: "update",
+      };
+    } else {
+      // 这里新建一个对象是为了获取每一个元素的父级元素，同时不破坏原先设置的 vdom 的数据结构
+      newFiber = {
+        type: child.type,
+        props: child.props,
+        child: null,
+        parent: fiber,
+        sibling: null,
+        dom: null,
+        effectTag: "placement",
+      };
+    }
+
+    if (oldFiber) {
+      // 第一次的时候，这个 sibling 是 null
+      oldFiber = oldFiber.sibling;
+    }
     if (index === 0) {
       // 当第一个数据进来的时候, 这个赋值给 fiber.child
       // 当第一个 span 进来的时候，将这个数据赋值给 prevChild
@@ -148,17 +158,17 @@ function initChildren(fiber, children) {
 function updateFunctionComponent(fiber) {
   const children = [fiber.type(fiber.props)];
 
-  initChildren(fiber, children);
+  reconcileChildren(fiber, children);
 }
 function updateHostComponent(fiber) {
   if (!fiber.dom) {
     const dom = (fiber.dom = createDom(fiber.type));
 
-    updateProps(dom, fiber.props);
+    updateProps(dom, fiber.props, {});
   }
   const children = fiber.props.children;
 
-  initChildren(fiber, children);
+  reconcileChildren(fiber, children);
 }
 
 function performUnitOfWork(fiber) {
@@ -181,6 +191,7 @@ function performUnitOfWork(fiber) {
   }
 }
 function workLoop(deadline) {
+  let shouldYield = false;
   while (!shouldYield && nextUnitOfWork) {
     // performUnitOfWork 会返回下一个任务的 obj
     nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
@@ -188,7 +199,7 @@ function workLoop(deadline) {
     shouldYield = deadline.timeRemaining() < 5;
   }
   // 当 nextUnitOfWork 没有值的时候，说明所有的任务都已经结束了
-  if (!nextUnitOfWork && root) {
+  if (!nextUnitOfWork && wipRoot) {
     // 这边执行，一次性将 dom 渲染至页面
     commitRoot();
   }
@@ -200,9 +211,20 @@ function workLoop(deadline) {
 // workLoop 是它的回调函数
 requestIdleCallback(workLoop);
 
+function update() {
+  wipRoot = {
+    dom: currentRoot.dom,
+    props: currentRoot.props,
+    // 备份一份旧的 vdom
+    alternate: currentRoot,
+  };
+  // 记录 #wipRoot 元素
+  nextUnitOfWork = wipRoot;
+}
 const React = {
   createElement,
   render,
+  update,
 };
 
 export default React;

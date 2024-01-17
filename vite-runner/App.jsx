@@ -3,13 +3,17 @@ import React from "./core/React.js";
 function CounterContainer() {
   return <Counter></Counter>;
 }
+let count = 10;
+let prop = { id: "12313" };
 function Counter({ num }) {
   function handleClick() {
-    console.log("click");
+    count++;
+    prop = {};
+    React.update();
   }
   return (
-    <div>
-      count: {num}
+    <div {...prop}>
+      count: {count}
       <button onClick={handleClick}>click</button>
     </div>
   );
