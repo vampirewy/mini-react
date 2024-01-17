@@ -103,6 +103,10 @@ function createDom(type) {
 function updateProps(dom, props) {
   Object.keys(props).forEach((prop) => {
     if (prop !== "children") {
+      if (prop.startsWith("on")) {
+        const eventType = prop.slice(2).toLowerCase();
+        dom.addEventListener(eventType, props[prop]);
+      }
       dom[prop] = props[prop];
     }
   });

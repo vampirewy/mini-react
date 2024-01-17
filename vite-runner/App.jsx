@@ -4,7 +4,15 @@ function CounterContainer() {
   return <Counter></Counter>;
 }
 function Counter({ num }) {
-  return <div>count: {num}</div>;
+  function handleClick() {
+    console.log("click");
+  }
+  return (
+    <div>
+      count: {num}
+      <button onClick={handleClick}>click</button>
+    </div>
+  );
 }
 
 function App() {
@@ -12,7 +20,7 @@ function App() {
     <div id="app">
       hi-mini-react
       {/* <CounterContainer></CounterContainer> */}
-      <Counter num={10}></Counter>
+      {/* <Counter num={10}></Counter> */}
       <Counter num={30}></Counter>
     </div>
   );
