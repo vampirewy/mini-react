@@ -29,6 +29,8 @@ let nextUnitOfWork = null;
 let wipRoot = null;
 // 创建一份新的 vdom
 let currentRoot = null;
+// 收集删除的
+let deletions = [];
 function render(element, container) {
   wipRoot = {
     dom: container,
@@ -40,11 +42,25 @@ function render(element, container) {
   nextUnitOfWork = wipRoot;
 }
 
+function commitDeletion(fiber) {
+  if (fiber.dom) {
+    let fiberParent = fiber.parent;
+    while (!fiberParent.dom) {
+      fiberParent = fiberParent.parent;
+    }
+    fiberParent.dom.removeChild(fiber.dom);
+  } else {
+    commitDeletion(fiber.child);
+  }
+}
+
 function commitRoot() {
+  deletions.forEach(commitDeletion);
   // 第一次进入是 div 元素对应的数据
   commitWork(wipRoot.child);
   currentRoot = wipRoot;
   wipRoot = null;
+  deletions = [];
 }
 function commitWork(fiber) {
   if (!fiber) return;
@@ -134,6 +150,7 @@ function reconcileChildren(fiber, children) {
         dom: null,
         effectTag: "placement",
       };
+      oldFiber && deletions.push(oldFiber);
     }
 
     if (oldFiber) {
