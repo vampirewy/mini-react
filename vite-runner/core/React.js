@@ -142,15 +142,17 @@ function reconcileChildren(fiber, children) {
       };
     } else {
       // 这里新建一个对象是为了获取每一个元素的父级元素，同时不破坏原先设置的 vdom 的数据结构
-      newFiber = {
-        type: child.type,
-        props: child.props,
-        child: null,
-        parent: fiber,
-        sibling: null,
-        dom: null,
-        effectTag: "placement",
-      };
+      if (child) {
+        newFiber = {
+          type: child.type,
+          props: child.props,
+          child: null,
+          parent: fiber,
+          sibling: null,
+          dom: null,
+          effectTag: "placement",
+        };
+      }
       oldFiber && deletions.push(oldFiber);
     }
 
@@ -169,7 +171,9 @@ function reconcileChildren(fiber, children) {
     // 然后再将这个数据保持下来
     // 第二次将下标为 0 的 span 里的数据赋值给 prevChild
     // 第三次将下标为 1 的 span 里的数据赋值给 prevChild
-    prevChild = newFiber;
+    if (newFiber) {
+      prevChild = newFiber;
+    }
   });
 
   while (oldFiber) {

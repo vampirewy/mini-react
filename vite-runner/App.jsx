@@ -34,8 +34,9 @@ function Counter() {
   return (
     <div>
       Counter
-      <div id="123">{showBar ? foo : bar}</div>
+      {/* <div id="123">{showBar ? foo : bar}</div> */}
       {/* count: {count} */}
+      {showBar && bar}
       <button onClick={handleClick}>showBar</button>
     </div>
   );
