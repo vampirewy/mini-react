@@ -8,9 +8,22 @@ import React from "./core/React.js";
 let showBar = false;
 function Counter() {
   const bar = <div>bar</div>;
-  function Foo() {
-    return <p>foo</p>;
-  }
+  const foo = (
+    <div>
+      foo
+      <div>child1</div>
+      <div>child2</div>
+    </div>
+  );
+  // function Foo() {
+  //   return (
+  //     <div>
+  //       foo
+  //       <div>child1</div>
+  //       <div>child2</div>
+  //     </div>
+  //   );
+  // }
 
   function handleClick() {
     showBar = !showBar;
@@ -21,9 +34,9 @@ function Counter() {
   return (
     <div>
       Counter
-      <div id="123">{showBar ? <Foo></Foo> : bar}</div>
+      <div id="123">{showBar ? foo : bar}</div>
       {/* count: {count} */}
-      <button onClick={handleClick}>click</button>
+      <button onClick={handleClick}>showBar</button>
     </div>
   );
 }

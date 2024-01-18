@@ -45,6 +45,7 @@ function render(element, container) {
 function commitDeletion(fiber) {
   if (fiber.dom) {
     let fiberParent = fiber.parent;
+
     while (!fiberParent.dom) {
       fiberParent = fiberParent.parent;
     }
@@ -170,6 +171,11 @@ function reconcileChildren(fiber, children) {
     // 第三次将下标为 1 的 span 里的数据赋值给 prevChild
     prevChild = newFiber;
   });
+
+  while (oldFiber) {
+    deletions.push(oldFiber);
+    oldFiber = oldFiber.sibling;
+  }
 }
 
 function updateFunctionComponent(fiber) {
