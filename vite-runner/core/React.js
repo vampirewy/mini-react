@@ -31,6 +31,8 @@ let wipRoot = null;
 let currentRoot = null;
 // 收集删除的
 let deletions = [];
+let wipFiber = null;
+
 function render(element, container) {
   wipRoot = {
     dom: container,
@@ -153,7 +155,9 @@ function reconcileChildren(fiber, children) {
           effectTag: "placement",
         };
       }
-      oldFiber && deletions.push(oldFiber);
+      if (oldFiber) {
+        deletions.push(oldFiber);
+      }
     }
 
     if (oldFiber) {
@@ -183,6 +187,7 @@ function reconcileChildren(fiber, children) {
 }
 
 function updateFunctionComponent(fiber) {
+  wipFiber = fiber;
   const children = [fiber.type(fiber.props)];
 
   reconcileChildren(fiber, children);
@@ -222,6 +227,11 @@ function workLoop(deadline) {
   while (!shouldYield && nextUnitOfWork) {
     // performUnitOfWork 会返回下一个任务的 obj
     nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
+    // 寻找兄弟节点
+    if (nextUnitOfWork?.type === wipRoot?.sibling?.type) {
+      nextUnitOfWork = undefined;
+    }
+
     // 剩余时间小于 5ms 的话就退出
     shouldYield = deadline.timeRemaining() < 5;
   }
@@ -239,14 +249,22 @@ function workLoop(deadline) {
 requestIdleCallback(workLoop);
 
 function update() {
-  wipRoot = {
-    dom: currentRoot.dom,
-    props: currentRoot.props,
-    // 备份一份旧的 vdom
-    alternate: currentRoot,
+  let currentFiber = wipFiber;
+
+  return () => {
+    wipRoot = {
+      ...currentFiber,
+      alternate: currentFiber,
+    };
+    // wipRoot = {
+    //   dom: currentRoot.dom,
+    //   props: currentRoot.props,
+    //   // 备份一份旧的 vdom
+    //   alternate: currentRoot,
+    // };
+    // 记录 #wipRoot 元素
+    nextUnitOfWork = wipRoot;
   };
-  // 记录 #wipRoot 元素
-  nextUnitOfWork = wipRoot;
 }
 const React = {
   createElement,

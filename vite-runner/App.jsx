@@ -3,18 +3,19 @@ import React from "./core/React.js";
 // function CounterContainer() {
 //   return <Counter></Counter>;
 // }
-// let count = 10;
+let count = 10;
 // let prop = { id: "12313" };
-let showBar = false;
+// let showBar = false;
 function Counter() {
-  const bar = <div>bar</div>;
-  const foo = (
-    <div>
-      foo
-      <div>child1</div>
-      <div>child2</div>
-    </div>
-  );
+  console.log("return Counter");
+  // const bar = <div>bar</div>;
+  // const foo = (
+  //   <div>
+  //     foo
+  //     <div>child1</div>
+  //     <div>child2</div>
+  //   </div>
+  // );
   // function Foo() {
   //   return (
   //     <div>
@@ -25,29 +26,58 @@ function Counter() {
   //   );
   // }
 
+  const update = React.update();
   function handleClick() {
-    showBar = !showBar;
-    // count++;
+    // showBar = !showBar;
+    count++;
     // prop = {};
-    React.update();
+    update();
   }
   return (
     <div>
-      Counter
+      Counter: {count}
       {/* <div id="123">{showBar ? foo : bar}</div> */}
       {/* count: {count} */}
-      {showBar && bar}
-      <button onClick={handleClick}>showBar</button>
+      {/* {showBar && bar} */}
+      <button onClick={handleClick}>click</button>
+    </div>
+  );
+}
+let counter1 = 10;
+function Bar() {
+  console.log("return Bar");
+
+  const update = React.update();
+  function handleClick() {
+    counter1++;
+    update();
+  }
+  return (
+    <div>
+      Bar: {counter1}
+      {/* <div id="123">{showBar ? foo : bar}</div> */}
+      {/* count: {count} */}
+      {/* {showBar && bar} */}
+      <button onClick={handleClick}>click</button>
     </div>
   );
 }
 
+let countApp = 10;
 function App() {
+  console.log("App return");
+  const update = React.update();
+  function handleClick() {
+    countApp++;
+    update();
+  }
   return (
     <div id="app">
-      {/* hi-mini-react */}
+      hi-mini-react
+      <button onClick={handleClick}>click</button>
       {/* <CounterContainer></CounterContainer> */}
       <Counter></Counter>
+      <Bar></Bar>
       {/* <Counter num={30}></Counter> */}
     </div>
   );
