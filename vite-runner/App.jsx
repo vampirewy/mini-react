@@ -46,7 +46,7 @@ function Bar() {
   // const update = React.update();
   function handleClick() {
     setCount((c) => c + 1);
-    setBar((bar) => bar + "bar");
+    setBar("barbar");
     // counter1++;
     // update();
   }
