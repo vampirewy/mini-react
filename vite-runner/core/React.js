@@ -187,6 +187,8 @@ function reconcileChildren(fiber, children) {
 }
 
 function updateFunctionComponent(fiber) {
+  stateHooksIndex = 0;
+  stateHooks = [];
   wipFiber = fiber;
   const children = [fiber.type(fiber.props)];
 
@@ -248,28 +250,36 @@ function workLoop(deadline) {
 // workLoop 是它的回调函数
 requestIdleCallback(workLoop);
 
-function update() {
+let stateHooks;
+let stateHooksIndex;
+function useState(initial) {
   let currentFiber = wipFiber;
+  let oldHook = currentFiber.alternate?.stateHooks[stateHooksIndex];
 
-  return () => {
+  const stateHook = {
+    state: oldHook ? oldHook.state : initial,
+  };
+
+  currentFiber.stateHooks = stateHooks;
+  stateHooks.push(stateHook);
+  stateHooksIndex++;
+
+  function setState(action) {
+    stateHook.state = action(stateHook.state);
+
     wipRoot = {
       ...currentFiber,
       alternate: currentFiber,
     };
-    // wipRoot = {
-    //   dom: currentRoot.dom,
-    //   props: currentRoot.props,
-    //   // 备份一份旧的 vdom
-    //   alternate: currentRoot,
-    // };
-    // 记录 #wipRoot 元素
     nextUnitOfWork = wipRoot;
-  };
+  }
+
+  return [stateHook.state, setState];
 }
 const React = {
   createElement,
   render,
-  update,
+  useState,
 };
 
 export default React;
