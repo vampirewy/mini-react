@@ -272,6 +272,9 @@ function useState(initial) {
   stateHooksIndex++;
 
   function setState(action) {
+    const eager = typeof action === "function" ? action(stateHook.state) : action;
+    if (eager === stateHook.state) return;
+
     stateHook.queue.push(typeof action === "function" ? action : () => action);
 
     wipRoot = {
