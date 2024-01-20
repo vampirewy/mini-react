@@ -51,17 +51,27 @@ function Bar() {
     // update();
   }
 
-  // 调用时机在 dom 渲染完成，浏览器渲染之前
+  // 调用时机在 dom 渲染完成，浏览器完成绘制之前
+  // useEffect 的 cleanup 是在 useEffect 之前里进行调用，当 deps 为空的时候不会调用 cleanup
   React.useEffect(() => {
     console.log("effect-->init");
+    return () => {
+      console.log("不应该被 cleanup");
+    };
   }, []);
 
   React.useEffect(() => {
     console.log("update", count);
+    return () => {
+      console.log("应该被 cleanup");
+    };
   }, [count]);
 
   React.useEffect(() => {
     console.log("update", bar);
+    return () => {
+      console.log("应该被 cleanup");
+    };
   }, [bar]);
   return (
     <div>
