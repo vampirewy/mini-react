@@ -61,9 +61,35 @@ function commitRoot() {
   deletions.forEach(commitDeletion);
   // 第一次进入是 div 元素对应的数据
   commitWork(wipRoot.child);
+  commitEffectHook();
   currentRoot = wipRoot;
   wipRoot = null;
   deletions = [];
+}
+function commitEffectHook() {
+  function run(fiber) {
+    if (!fiber) return;
+
+    if (!fiber.alternate) {
+      // init
+      fiber.effectHooks?.forEach((hook) => {
+        hook.callback();
+      });
+    } else {
+      // update
+      fiber.effectHooks?.forEach((newHook, index) => {
+        const oldEffectHook = fiber.alternate?.effectHooks[index];
+
+        const needUpdate = oldEffectHook?.deps.some((oldDep, i) => {
+          return oldDep !== newHook.deps[i];
+        });
+        needUpdate && newHook.callback();
+      });
+    }
+    run(fiber.child);
+    run(fiber.sibling);
+  }
+  run(wipRoot);
 }
 function commitWork(fiber) {
   if (!fiber) return;
@@ -189,6 +215,7 @@ function reconcileChildren(fiber, children) {
 function updateFunctionComponent(fiber) {
   stateHooksIndex = 0;
   stateHooks = [];
+  effectHooks = [];
   wipFiber = fiber;
   const children = [fiber.type(fiber.props)];
 
@@ -286,10 +313,23 @@ function useState(initial) {
 
   return [stateHook.state, setState];
 }
+
+let effectHooks;
+function useEffect(callback, deps) {
+  const effectHook = {
+    callback,
+    deps,
+  };
+
+  effectHooks.push(effectHook);
+  wipFiber.effectHooks = effectHooks;
+}
+
 const React = {
   createElement,
   render,
   useState,
+  useEffect,
 };
 
 export default React;

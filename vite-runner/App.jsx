@@ -46,10 +46,23 @@ function Bar() {
   // const update = React.update();
   function handleClick() {
     setCount((c) => c + 1);
-    setBar("bar");
+    setBar((bar) => bar + "bar");
     // counter1++;
     // update();
   }
+
+  // 调用时机在 dom 渲染完成，浏览器渲染之前
+  React.useEffect(() => {
+    console.log("effect-->init");
+  }, []);
+
+  React.useEffect(() => {
+    console.log("update", count);
+  }, [count]);
+
+  React.useEffect(() => {
+    console.log("update", bar);
+  }, [bar]);
   return (
     <div>
       <div title="count">{count}</div>
