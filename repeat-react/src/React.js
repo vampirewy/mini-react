@@ -90,7 +90,7 @@ function performUnitOfWork(fiber) {
     updateFunctionComponent(fiber);
   }
   if (fiber.child) return fiber.child;
-  if (fiber.sibling) return fiber.sibling;
+  // if (fiber.sibling) return fiber.sibling;
 
   let newFiber = fiber;
   while (newFiber) {

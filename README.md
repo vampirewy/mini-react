@@ -228,7 +228,7 @@ function performUnitOfWork(fiber) {
       prevChild.sibling = newFiber;
     }
     // 第一次进来的时候，保存 index = 0 的 item
-    // 每次保存当前 index 的 item
+    child; // 每次保存当前 index 的 item
     prevChild = newFiber;
   });
 
@@ -296,5 +296,39 @@ function commitWork(fiber) {
 
   commitWork(fiber.child);
   commitWork(fiber.sibling);
+}
+```
+
+8. 到目前为止都还是 dom 结构的处理，但是 React 实际是以 FunctionComponent 的形式返回 dom 结构，所以如何才能支持 FunctionComponent，这是我们需要思考的问题，因为我们第 7 点已经是按每一个节点来处理，所以当执行 performUnitOfWork 的时候，第一个节点是 div#root，当开始运行 performUnitOfWork 的时候，fiber 并不是一个 functionComponent，按正常的走；当 div#root 的 children 开始的时候，它是一个 App() --> fiber type 是一个 function，![嵌套组件](./image/function-component.jpg)
+
+```javascript
+// 打印一下 App 这个方法，可以得到
+// App() {
+// return /* @__PURE__ */ React.createElement("div", { id: "app" }, /* @__PURE__ */ React.createElement(Counter, { num: 19 }), /* @__PURE__ */ React.createElement(Counter, { num: 29 }));
+// }
+
+function performUnitOfWork(fiber) {
+  console.log(fiber.type); // 这边的 typeof fiber.type === 'function'
+  // 在这边就需要分不是 function 和 普通 vdom 的情况了
+  const isFunctionComponent = typeof fiber.type === "function";
+
+  if (!isFunctionComponent) {
+    // 普通 vdom 的情况
+  } else {
+    // 处理 functionComponent 的情况
+    // 但是处理它的时候需要先开箱(即调用)， App() --> 开出来后才是它的 children
+  }
+}
+
+function commitWork(fiber) {
+  if (!fiber) return;
+  let fiberParent = fiber.parent;
+
+  // 而且 functionComponent 是不存在 dom ，所以在 commitWork 处理的时候也需要分情况处理，如果存在 fiber.dom 的话，让其父级 append 进去，如果不存在 fiber.dom 的时候，需要递归向上查找到最近的那个父级
+  while (!fiberParent.dom) {
+    fiberParent = fiberParent.parent;
+  }
+
+  fiberParent.dom.appendChild(fiber.dom);
 }
 ```
