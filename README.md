@@ -228,6 +228,7 @@ function performUnitOfWork(fiber) {
       prevChild.sibling = newFiber;
     }
     // 第一次进来的时候，保存 index = 0 的 item
+    // 每次保存当前 index 的 item
     prevChild = newFiber;
   });
 
@@ -253,4 +254,47 @@ function workLoop(deadline) {
 // 该方法可以在浏览器空闲时间进行任务安排，workLoop 是回调，里面有一个 timeRemaining()方法，用于知道还有多少时间空闲
 // 后台任务调度器
 requestIdleCallback(workLoop);
+```
+
+6. ![转链表 performUnitOfWork(每次只返回一个 vdom)](./image/vdom%20transform%20链表.jpg)
+7. 因为 performUnitOfWork 每次处理一个节点然后进行渲染，但是当浏览器没有空闲的时候，有可能会造成只渲染了部分 div#root、div#app、div1，所以我们考虑能不能先处理链表，然后再一次性添加至 dom 上进行渲染，这样 user 就能看见完整的 dom
+
+```javascript
+let root = null;
+
+function workLoop(deadline) {
+  let shouldYield = false;
+  while (!shouldYield && nextOfUnitWork) {
+    nextOfUnitWork = performUnitOfWork(nextOfUnitWork);
+    shouldYield = deadline.timeRemaining() < 10;
+  }
+  // 当所有节点都处理完成后， nextOfUnitWork 为 null ， 同时 root 有值的情况下，将 vdom 统一提交
+  if (!nextOfUnitWork && root) {
+    commitRoot();
+  }
+}
+
+function render(element, container) {
+  nextOfUnitWork = {
+    dom: container,
+    props: {
+      children: [element],
+    },
+  };
+  root = nextOfUnitWork;
+}
+
+function commitRoot() {
+  commitWork(root.child);
+  root = null;
+}
+
+function commitWork(fiber) {
+  if (!fiber) return;
+
+  fiber.parent.dom.appendChild(fiber.dom);
+
+  commitWork(fiber.child);
+  commitWork(fiber.sibling);
+}
 ```

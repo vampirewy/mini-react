@@ -30,7 +30,9 @@ function Counter({ num }) {
 function App() {
   return (
     <div id="app">
-      hi-mini-react
+      <div>hi</div>
+      <div>mini</div>
+      <div>react</div>
       <Counter num={19}></Counter>
       <Counter num={29}></Counter>
     </div>
