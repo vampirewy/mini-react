@@ -18,7 +18,7 @@ function createElement(type, props, ...children) {
 }
 
 // const App = createElement("div", { id: "app" }, createChildEle("hello"));
-// const App = createElement("div", { id: "app" }, "hello", "-", "react");
+const App = createElement("div", { id: "app" }, "hello", "-", "react");
 
 function render(element, container) {
   const dom = element.type !== "TEXT_ELEMENT" ? document.createElement(element.type) : document.createTextNode("");
@@ -33,6 +33,7 @@ function render(element, container) {
     render(child, dom);
   });
 
+  // Sync program
   container.appendChild(dom);
 }
 

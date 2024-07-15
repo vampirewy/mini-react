@@ -178,6 +178,20 @@ function render(element, container) {
   //                 children: [],
   //               },
   //             },
+  //             {
+  //               type: "TEXT_ELEMENT",
+  //               props: {
+  //                 nodeValue: text,
+  //                 children: [],
+  //               },
+  //             },
+  //             {
+  //               type: "TEXT_ELEMENT",
+  //               props: {
+  //                 nodeValue: text,
+  //                 children: [],
+  //               },
+  //             },
   //           ],
   //         },
   //       },
@@ -221,6 +235,8 @@ function performUnitOfWork(fiber) {
 
     if (index === 0) {
       // 第一次给 div#root 绑定属性为 id = app 的 div 的数据结构
+      // 这个 nextOfUnitWork.child 的指针与最后一行的 prevChild 指针指向同一个对象的引用
+      // 所以 index === 1 时, prevChild.sibling 其实修改的就是 nextOfUnitWork.child.sibling 的值
       nextOfUnitWork.child = newFiber;
     } else {
       // 当遍历到第二个 text 结构时，因为 prevChild 保存的是 index = 0 的那个 text 结构，所以把第二个 text 赋值给第一个 text
@@ -228,7 +244,7 @@ function performUnitOfWork(fiber) {
       prevChild.sibling = newFiber;
     }
     // 第一次进来的时候，保存 index = 0 的 item
-    child; // 每次保存当前 index 的 item
+    // 每次保存当前 index 的 item
     prevChild = newFiber;
   });
 
