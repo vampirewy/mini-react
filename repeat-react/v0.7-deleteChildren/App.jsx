@@ -2,13 +2,15 @@ import React from "./core/React.js";
 
 let isShowFoo = true;
 function Count({ num }) {
-  function Foo() {
-    return <div>foo</div>;
-  }
+  const foo = (
+    <div>
+      foo
+      <div>child1</div>
+      <div>child2</div>
+    </div>
+  );
 
-  function Bar() {
-    return <p>bar</p>;
-  }
+  const bar = <div>bar</div>;
 
   function handleClick() {
     isShowFoo = !isShowFoo;
@@ -18,8 +20,8 @@ function Count({ num }) {
   return (
     <div>
       hello, {num}
-      <div>{isShowFoo ? <Foo></Foo> : <Bar></Bar>}</div>
       <button onClick={handleClick}>click</button>
+      <div>{isShowFoo ? foo : bar}</div>
     </div>
   );
 }
