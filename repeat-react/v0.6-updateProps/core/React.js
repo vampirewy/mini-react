@@ -1,6 +1,7 @@
 const TEXT_ELEMENT = "TEXT_ELEMENT";
+// work in progress
+let wipRoot = null;
 let nextUnitOfWork = null;
-let root = null;
 let currentRoot = null;
 
 function createChild(text) {
@@ -27,21 +28,21 @@ function createElement(type, props, ...children) {
 }
 
 function render(vdom, container) {
-  nextUnitOfWork = {
+  wipRoot = {
     dom: container,
     props: {
       children: [vdom],
     },
   };
-  root = nextUnitOfWork;
-  console.log("placement", root);
+  nextUnitOfWork = wipRoot;
+  console.log("placement", wipRoot);
 }
 
 function commitRoot() {
-  commitWork(root.child);
+  commitWork(wipRoot.child);
   // 在渲染完成之后，将整棵 DOM 树存储在 currentRoot 中
-  currentRoot = root;
-  root = null;
+  currentRoot = wipRoot;
+  wipRoot = null;
 }
 
 function commitWork(fiber) {
@@ -96,7 +97,7 @@ function updateProps(dom, nextProps, prevProps) {
   });
 }
 
-function initChildren(fiber, children) {
+function reconcileChildren(fiber, children) {
   // 当调用 update 方法时，绑定新旧 vdom 树的关系
   let oldFiber = fiber.alternate?.child;
   let prevChild = null;
@@ -144,7 +145,7 @@ function initChildren(fiber, children) {
 function updateFunctionComponent(fiber) {
   const children = [fiber.type(fiber.props)];
 
-  initChildren(fiber, children);
+  reconcileChildren(fiber, children);
 }
 
 function updateHostComponent(fiber) {
@@ -154,7 +155,7 @@ function updateHostComponent(fiber) {
   }
   const children = fiber.props.children;
 
-  initChildren(fiber, children);
+  reconcileChildren(fiber, children);
 }
 
 function performUnitOfWork(fiber) {
@@ -185,7 +186,7 @@ function workLoop(deadline) {
     shouldYield = deadline.timeRemaining() < 50;
   }
 
-  if (!nextUnitOfWork && root) {
+  if (!nextUnitOfWork && wipRoot) {
     commitRoot();
   }
   window.requestIdleCallback(workLoop);
@@ -197,15 +198,15 @@ function start() {
 
 // feat: update props
 function update() {
-  nextUnitOfWork = {
+  wipRoot = {
     dom: currentRoot.dom,
     props: currentRoot.props,
     // 关联老节点, 初始化时是 #root 节点对应的
     alternate: currentRoot,
   };
-  console.log("update", nextUnitOfWork);
+  console.log("update", wipRoot);
   // 最终渲染
-  root = nextUnitOfWork;
+  nextUnitOfWork = wipRoot;
 }
 
 start();
