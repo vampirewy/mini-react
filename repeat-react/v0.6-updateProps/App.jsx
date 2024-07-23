@@ -1,12 +1,18 @@
 import React from "./core/React.js";
 
+// 这两个变量在外面是因为当再次更新的时候，vdom 又得重新走一遍
+let count = 10;
+let props = { id: "id" };
 function Count({ num }) {
   function handleClick() {
-    console.log(111);
+    count++;
+    props = {};
+    React.update();
   }
+
   return (
-    <div>
-      hello, {num}
+    <div {...props}>
+      hello, {count}
       <button onClick={handleClick}>click</button>
     </div>
   );
