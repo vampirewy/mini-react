@@ -204,9 +204,9 @@ function update() {
     // 关联老节点, 初始化时是 #root 节点对应的
     alternate: currentRoot,
   };
-  console.log("update", wipRoot);
-  // 最终渲染
+
   nextUnitOfWork = wipRoot;
+  console.log("update", wipRoot);
 }
 
 start();
