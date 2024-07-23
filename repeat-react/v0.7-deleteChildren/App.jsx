@@ -1,27 +1,28 @@
 import React from "./core/React.js";
 
-let isShowFoo = true;
+let isShow = false;
 function Count({ num }) {
-  const foo = (
-    <div>
-      foo
-      <div>child1</div>
-      <div>child2</div>
-    </div>
-  );
+  // const foo = (
+  //   <div>
+  //     foo
+  //     <div>child1</div>
+  //     <div>child2</div>
+  //   </div>
+  // );
 
   const bar = <div>bar</div>;
 
   function handleClick() {
-    isShowFoo = !isShowFoo;
+    isShow = !isShow;
     React.update();
   }
 
   return (
     <div>
       hello, {num}
+      {isShow && bar}
       <button onClick={handleClick}>click</button>
-      <div>{isShowFoo ? foo : bar}</div>
+      {/* <div>{isShowFoo ? foo : bar}</div> */}
     </div>
   );
 }

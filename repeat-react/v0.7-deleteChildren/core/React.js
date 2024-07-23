@@ -121,8 +121,8 @@ function reconcileChildren(fiber, children) {
   // 当调用 update 方法时，绑定新旧 vdom 树的关系
   let oldFiber = fiber.alternate?.child;
   let prevChild = null;
-  let newFiber;
   children.forEach((child, index) => {
+    let newFiber;
     const isSameType = oldFiber && oldFiber.type === child.type;
     if (isSameType) {
       newFiber = {
@@ -136,15 +136,18 @@ function reconcileChildren(fiber, children) {
         effectTag: "update",
       };
     } else {
-      newFiber = {
-        type: child.type,
-        props: child.props,
-        parent: fiber,
-        dom: null,
-        child: null,
-        sibling: null,
-        effectTag: "placement",
-      };
+      // 有可能它的初始值为isShow = false,不能渲染, {isShow && bar}
+      if (child) {
+        newFiber = {
+          type: child.type,
+          props: child.props,
+          child: null,
+          parent: fiber,
+          sibling: null,
+          dom: null,
+          effectTag: "placement",
+        };
+      }
 
       // 当两个节点 type 不一致时，先收集需要删除的旧节点信息
       if (oldFiber) {
@@ -163,9 +166,14 @@ function reconcileChildren(fiber, children) {
     } else {
       prevChild.sibling = newFiber;
     }
-    prevChild = newFiber;
+    // 当 newFiber 有值的时候，才去存储当前对象
+    // 有可能它为 undefined, {isShow && bar}
+    if (newFiber) {
+      prevChild = newFiber;
+    }
   });
 
+  // the new vdom is less than the old, so we need to collect the olds that need to be deleted
   while (oldFiber) {
     deletions.push(oldFiber);
     oldFiber = oldFiber.sibling;
