@@ -6,7 +6,7 @@ function Foo() {
 
   function handleClick() {
     setCount((c) => c + 1);
-    setStr("barbar");
+    setStr("bar");
   }
 
   return (
