@@ -27,11 +27,44 @@ function Count({ num }) {
   );
 }
 
+function Foo() {
+  console.log("Foo return");
+  const update = React.update();
+  function handleClick() {
+    update();
+  }
+  return (
+    <div>
+      Foo,
+      <button onClick={handleClick}>click</button>
+    </div>
+  );
+}
+function Bar() {
+  console.log("Bar return");
+  const update = React.update();
+  function handleClick() {
+    update();
+  }
+  return (
+    <div>
+      Bar,
+      <button onClick={handleClick}>click</button>
+    </div>
+  );
+}
+
 function App() {
+  console.log("App return");
+  const update = React.update();
+  function handleClick() {
+    update();
+  }
   return (
     <div id="app">
-      <div>mini</div>
-      <Count num={10}></Count>
+      <div onClick={handleClick}>mini</div>
+      <Foo></Foo>
+      <Bar></Bar>
     </div>
   );
 }

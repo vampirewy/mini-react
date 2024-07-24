@@ -5,6 +5,8 @@ let nextUnitOfWork = null;
 let currentRoot = null;
 // 需要删除的老节点列表
 let deletions = [];
+// Save current function component information
+let wipFiber = null;
 
 function createChild(text) {
   return {
@@ -181,6 +183,8 @@ function reconcileChildren(fiber, children) {
 }
 
 function updateFunctionComponent(fiber) {
+  // save the function component information
+  wipFiber = fiber;
   const children = [fiber.type(fiber.props)];
 
   reconcileChildren(fiber, children);
@@ -221,6 +225,13 @@ function workLoop(deadline) {
   let shouldYield = false;
   while (!shouldYield && nextUnitOfWork) {
     nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
+    // 如果 nextUnitOfWork 返回的对象和 wipRoot.sibling.type 一样，说明下一个组件不需要更新
+    // 1.初始化 update 方法时已保存了每个组件的信息,同时返回一个闭包，等待调用
+    // 2.当触发 Foo 组件的点击事件(即 update 方法返回的函数)时, 在 update 方法中，wipRoot 和 nextUnitOfWork 的指针都是指向同一个对象
+    // 3.当开始执行 performUnitOfWork 方法时，当 Foo 组件执行完成时，它会判断它的兄弟是不是与即将执行的组件类型一致，如果一致说明不用更新这个组件
+    if (nextUnitOfWork?.type === wipRoot?.sibling?.type) {
+      nextUnitOfWork = undefined;
+    }
     shouldYield = deadline.timeRemaining() < 50;
   }
 
@@ -234,16 +245,20 @@ function start() {
   window.requestIdleCallback(workLoop);
 }
 
-// feat: update props
 function update() {
-  wipRoot = {
-    dom: currentRoot.dom,
-    props: currentRoot.props,
-    // 关联老节点, 初始化时是 #root 节点对应的
-    alternate: currentRoot,
-  };
+  // Because wipFiber is the global variable, it saves the last function component information
+  // Use Closure to save current function component
+  let currentFiber = wipFiber;
 
-  nextUnitOfWork = wipRoot;
+  return () => {
+    wipRoot = {
+      ...currentFiber,
+      // 关联老节点, 初始化时是 #root 节点对应的
+      alternate: currentFiber,
+    };
+
+    nextUnitOfWork = wipRoot;
+  };
 }
 
 start();
