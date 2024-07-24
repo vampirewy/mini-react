@@ -273,16 +273,21 @@ function useState(initial) {
 
   const stateHook = {
     state: oldHook ? oldHook.state : initial,
+    queue: oldHook ? oldHook.queue : [],
   };
 
+  stateHook.queue.forEach((action) => {
+    stateHook.state = typeof action === "function" ? action(stateHook.state) : action;
+  });
+
+  stateHook.queue = [];
   stateHooks.push(stateHook);
-
   currentFiber.stateHooks = stateHooks;
-
   stateHookIndex++;
 
   function setState(action) {
-    stateHook.state = action(stateHook.state);
+    // Collect all of callbacks
+    stateHook.queue.push(action);
 
     // 这里就是原来的 update 方法
     wipRoot = {

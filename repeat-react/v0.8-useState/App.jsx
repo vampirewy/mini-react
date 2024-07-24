@@ -6,8 +6,9 @@ function Foo() {
 
   function handleClick() {
     setCount((c) => c + 1);
-    setStr((str) => str + "bar");
+    setStr("barbar");
   }
+
   return (
     <div>
       Foo,
