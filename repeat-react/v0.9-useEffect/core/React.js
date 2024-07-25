@@ -7,8 +7,6 @@ let currentRoot = null;
 let deletions = [];
 // Save current function component information
 let wipFiber = null;
-// Collect all of effect hooks
-let effectHooks;
 
 function createChild(text) {
   return {
@@ -76,7 +74,7 @@ function commitEffectHooks() {
     if (!fiber.alternate) {
       // init effect
       fiber?.effectHooks?.forEach((hook) => {
-        hook.callback();
+        hook.cleanup = hook.callback();
       });
     } else {
       // update effect
@@ -87,7 +85,7 @@ function commitEffectHooks() {
           return newDep !== oldEffectHook.deps[i];
         });
 
-        needUpdate && newHook.callback();
+        needUpdate && (newHook.cleanup = newHook.callback());
       });
     }
 
@@ -95,6 +93,16 @@ function commitEffectHooks() {
     run(fiber.sibling);
   }
 
+  function runCleanup(fiber) {
+    if (!fiber) return;
+    fiber?.alternate?.effectHooks.forEach((hook) => {
+      if (hook.deps.length) {
+        hook.cleanup && hook.cleanup();
+      }
+    });
+  }
+
+  runCleanup(wipRoot);
   run(wipRoot);
 }
 
@@ -338,10 +346,13 @@ function useState(initial) {
   return [stateHook.state, setState];
 }
 
+// Collect all of effect hooks
+let effectHooks;
 function useEffect(callback, deps) {
   const effectHook = {
     callback,
     deps,
+    cleanup: undefined,
   };
 
   effectHooks.push(effectHook);
