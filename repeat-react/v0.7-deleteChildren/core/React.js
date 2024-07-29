@@ -253,7 +253,7 @@ function update() {
   return () => {
     wipRoot = {
       ...currentFiber,
-      // 关联老节点, 初始化时是 #root 节点对应的
+      // 关联老节点, 现是当前 Fiber 节点的旧节点
       alternate: currentFiber,
     };
 

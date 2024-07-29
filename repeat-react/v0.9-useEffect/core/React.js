@@ -162,6 +162,7 @@ function reconcileChildren(fiber, children) {
   // 当调用 update 方法时，绑定新旧 vdom 树的关系
   let oldFiber = fiber.alternate?.child;
   let prevChild = null;
+
   children.forEach((child, index) => {
     let newFiber;
     const isSameType = oldFiber && oldFiber.type === child.type;

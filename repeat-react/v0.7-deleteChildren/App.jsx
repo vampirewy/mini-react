@@ -2,6 +2,7 @@ import React from "./core/React.js";
 
 let isShow = false;
 function Count({ num }) {
+  const update = React.update();
   // const foo = (
   //   <div>
   //     foo
@@ -14,7 +15,7 @@ function Count({ num }) {
 
   function handleClick() {
     isShow = !isShow;
-    React.update();
+    update();
   }
 
   return (
@@ -65,6 +66,7 @@ function App() {
       <div onClick={handleClick}>mini</div>
       <Foo></Foo>
       <Bar></Bar>
+      <Count num={10}></Count>
     </div>
   );
 }
